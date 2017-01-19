@@ -17,6 +17,9 @@ const
     // https://github.com/desmondmorris/node-twitter
     // MIT license
     Twitter = require('twitter'),
+    // http://underscorejs.org/
+    // custom license, MIT-derived?
+    _ = require('underscore'),
     // https://github.com/yargs/yargs
     // MIT/X11 license
     argv = require('yargs').argv;
@@ -28,7 +31,12 @@ var
     configuration = {
         // TODO: not all environment variables are relevant to memoization
         "timestamp": new Date(),
-        "environment": process.env,
+        "environment": _.pick(process.env,
+            "TWITTER2RSS_CONSUMER_KEY",
+            "TWITTER2RSS_CONSUMER_SECRET",
+            "TWITTER2RSS_ACCESS_TOKEN_KEY",
+            "TWITTER2RSS_ACCESS_TOKEN_SECRET"
+        ),
         "arguments": argv,
     },
     hashForMemoization = stringify(configuration);
@@ -42,7 +50,21 @@ try {
     process.exit(1);
 }
 
-twitterClient = new Twitter(t2rShared.getConfiguration().twitter);
+var twitterClient = new Twitter({
+    "consumer_key": configuration.environment.TWITTER2RSS_CONSUMER_KEY,
+    "consumer_secret": configuration.environment.TWITTER2RSS_CONSUMER_SECRET,
+    "access_token_key": configuration.environment.TWITTER2RSS_ACCESS_TOKEN_KEY,
+    "access_token_secret": configuration.environment.TWITTER2RSS_ACCESS_TOKEN_SECRET
+});
 
-
-console.log(hashForMemoization);
+twitterClient.get(
+    "lists/list.json",
+    { }, // any params?
+    function (err, lists, response) {
+        if (err) {
+            console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
+            return system.exit(1);
+        }
+        console.log(JSON.stringify(lists));
+    }
+);
