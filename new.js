@@ -3,19 +3,6 @@
 // API client                                                                //
 // ************************************************************************* //
 
-const
-    APPLICATION = {
-        NAME: "twitter2rss",
-        VERSION: "0.9.1"
-    },
-    COMMANDS = [ "lists" ],
-    DEFAULT_OPTIONS = {
-        "consumerkey": { "default": process.env.TWITTER2RSS_CONSUMER_KEY },
-        "consumersecret": { "default": process.env.TWITTER2RSS_CONSUMER_SECRET },
-        "tokenkey": { "default": process.env.TWITTER2RSS_ACCESS_TOKEN_KEY },
-        "tokensecret": { "default": process.env.TWITTER2RSS_ACCESS_TOKEN_SECRET }
-    };
-
 var
     crypto = require('crypto'),
     // https://github.com/jprichardson/node-fs-extra
@@ -33,8 +20,37 @@ var
     Twitter = require('twitter'),
     // http://underscorejs.org/
     // custom license, MIT-derived?
-    _ = require('underscore'),
-    // https://github.com/yargs/yargs
+    _ = require('underscore');
+
+const
+    APPLICATION = {
+        NAME: "twitter2rss",
+        VERSION: "0.9.1"
+    },
+    CACHE_FOLDER = path.join(process.env.HOME, ".local", APPLICATION.NAME, "cache"),
+    COMMANDS = [ "lists" ],
+    DEFAULT_OPTIONS = {
+        "consumerkey": { "default": process.env.TWITTER2RSS_CONSUMER_KEY },
+        "consumersecret": { "default": process.env.TWITTER2RSS_CONSUMER_SECRET },
+        "tokenkey": { "default": process.env.TWITTER2RSS_ACCESS_TOKEN_KEY },
+        "tokensecret": { "default": process.env.TWITTER2RSS_ACCESS_TOKEN_SECRET }
+    };
+
+const date2HashString = d => d.toISOString().
+    replace(/\..+$/, ''). // delete the dot and everything after
+    replace(/[T\-:]/g, ''). // delete the 'T', hyphens and columns
+    replace(/^.../, ''); // drops the first three characters of the year, not useful
+
+const hashString2date = s => new Date(
+        (new Date()).getFullYear().toString().replace(/.$/, '') + s.substring(0, 1),
+        parseInt(s.substring(1, 3)) - 1,
+        s.substring(3, 5),
+        s.substring(5, 7),
+        s.substring(7, 9),
+        s.substring(9, 11)
+    );
+
+var // https://github.com/yargs/yargs
     // MIT/X11 license
     argv = require('yargs')
         .usage('Usage: $0 <command> [options]')
@@ -76,31 +92,24 @@ var
         "timestamp": new Date(),
         "arguments": argv,
     },
-    hashForMemoization = crypto.createHash('sha1');
+    prefixHashForMemoization = crypto.createHash('sha1');
 
 // calculate the hash for memoization from some parts of the configuration
-hashForMemoization =
+prefixHashForMemoization =
     configuration.command +
     "_" +
-    hashForMemoization.update(stringify(_.pick(configuration,
+    prefixHashForMemoization.update(stringify(_.pick(configuration,
         "application", // so that different versions make different hashes
         "command",
         "environment",
         "arguments"
     ))).digest('hex') +
-    "_" +
-    configuration.timestamp.toISOString().
-        replace(/\..+$/, ''). // delete the dot and everything after
-        replace(/[T\-:]/g, ''). // delete the 'T', hyphens and columns
-        replace(/^.../, ''); // drops the first three characters of the year, not useful
-
-console.log(hashForMemoization);
-process.exit(0);
+    "_";
 
 // create the cache folder used for memoization, if it does not exist already
 try {
     // TODO: this is suitable to recent Fedora distros, but what about other OS's?
-    fs.ensureDirSync(path.join(process.env.HOME, ".local", APPLICATION.NAME, "cache"));
+    fs.ensureDirSync(CACHE_FOLDER);
 } catch (e) {
     console.error(new Error("Error creating the memoization cache folder."));
     process.exit(1);
@@ -108,6 +117,7 @@ try {
 
 // TODO: some garbage collection
 
+// create the Twitter client
 var twitterClient = new Twitter({
     "consumer_key": argv.consumerkey,
     "consumer_secret": argv.consumersecret,
@@ -115,17 +125,59 @@ var twitterClient = new Twitter({
     "access_token_secret": argv.tokensecret
 });
 
-console.log(JSON.stringify(configuration));
-process.exit(0);
-
-twitterClient.get(
-    "lists/list.json",
-    { }, // any params?
-    function (err, lists, response) {
+var getLatestCacheTimestamp = (prefixHashForMemoization, callback) => {
+    fs.readdir(CACHE_FOLDER, (err, files) => {
         if (err) {
-            console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
+            console.error("Error reading the cache folder: " + err.message);
             return process.exit(1);
         }
-        console.log(JSON.stringify(lists));
-    }
-);
+        callback(null, _.last(files
+            .filter(filename => filename.match(new RegExp('^' + prefixHashForMemoization)))
+            .map(filename => hashString2date(filename.match(/_(\d{11})$/)[1]))
+            .sort()));
+    });
+}
+
+var retrieveCache = (prefixHashForMemoization, timestamp, callback) => {
+    fs.readFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), (err, text) => {
+        if (err) {
+            console.error("Failed reading from cache, with error message: " + err.message);
+            return process.exit(1);
+        }
+        callback(null, JSON.parse(text));
+    });
+}
+
+var getLists = (callback, results) => {
+    const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
+    getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
+        if (configuration.timestamp - latestCacheTimestamp <= BUFFER) {
+            // the cache is still valid
+            console.error("RETRIEVING FROM CACHE");
+            retrieveCache(prefixHashForMemoization, latestCacheTimestamp, callback);
+        } else {
+            console.error("RETRIEVING LIVE");
+            twitterClient.get(
+                "lists/list.json",
+                { }, // any params?
+                function (err, lists, response) {
+                    if (err) {
+                        console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
+                        return process.exit(1);
+                    }
+                    fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(configuration.timestamp)), JSON.stringify(response), err => {
+                        if (err) {
+                            console.error("Error writing the cache file: " + err.message);
+                            return process.exit(1);
+                        }
+                        callback(null, response);
+                    });
+                }
+            );
+        }
+    });
+};
+
+getLists((err, response) => {
+    console.log(JSON.stringify(response));
+});
