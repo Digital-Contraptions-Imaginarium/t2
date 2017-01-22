@@ -11,7 +11,7 @@ var
     path = require("path"),
     // https://github.com/jhurliman/node-rate-limiter
     // MIT license
-    Limiter = require('limiter').RateLimiter,
+    RateLimiter = require("./rate-limiter").RateLimiter,
     // https://github.com/substack/json-stable-stringify
     // MIT license
     stringify = require('json-stable-stringify'),
@@ -92,6 +92,7 @@ var
         "timestamp": new Date(),
         "arguments": argv,
     },
+    rateLimiter15PerMinute = new RateLimiter("im.dico." + APPLICATION.NAME, 15, "minute"),
     prefixHashForMemoization = crypto.createHash('sha1');
 
 // calculate the hash for memoization from some parts of the configuration
@@ -153,27 +154,27 @@ var getLists = (callback, results) => {
     getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
         if (configuration.timestamp - latestCacheTimestamp <= BUFFER) {
             // the cache is still valid
-            console.error("RETRIEVING FROM CACHE");
             retrieveCache(prefixHashForMemoization, latestCacheTimestamp, callback);
         } else {
-            console.error("RETRIEVING LIVE");
-            twitterClient.get(
-                "lists/list.json",
-                { }, // any params?
-                function (err, lists, response) {
-                    if (err) {
-                        console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
-                        return process.exit(1);
-                    }
-                    fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(configuration.timestamp)), JSON.stringify(response), err => {
+            rateLimiter15PerMinute.removeTokens(1, (err) => {
+                twitterClient.get(
+                    "lists/list.json",
+                    { }, // any params?
+                    function (err, lists, response) {
                         if (err) {
-                            console.error("Error writing the cache file: " + err.message);
+                            console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
                             return process.exit(1);
                         }
-                        callback(null, response);
-                    });
-                }
-            );
+                        fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(configuration.timestamp)), JSON.stringify(response.body), err => {
+                            if (err) {
+                                console.error("Error writing the cache file: " + err.message);
+                                return process.exit(1);
+                            }
+                            callback(null, response);
+                        });
+                    }
+                );
+            });
         }
     });
 };
