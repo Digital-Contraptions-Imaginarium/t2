@@ -1,7 +1,10 @@
-// This is a partial clone of https://github.com/jhurliman/node-rate-limiter
-// using the file system to share the limiters across different, non-concurrent
-// executions of one or more Node scripts. Note that incredible things could
-// happen if you use this concurrently instead!!! :-D
+// ************************************************************************* //
+// This is a partial clone of https://github.com/jhurliman/node-rate-limiter //
+// using the file system to share the limiters across different,             //
+// non-concurrent executions of one or more Node scripts. Note that          //
+// incredible things could happen if you use this concurrently instead!!!    //
+// :-D                                                                       //
+// ************************************************************************* //
 
 const
     fs = require("fs-extra"),

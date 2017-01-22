@@ -1,4 +1,8 @@
-var
+// ************************************************************************* //
+// This is a command-line wrapper for the memoized-twitter-client.js library //
+// ************************************************************************* //
+
+const
     Twitter = require("./memoized-twitter-client").Twitter,
     // http://underscorejs.org/
     // custom license, MIT-derived?

@@ -1,9 +1,8 @@
 // ************************************************************************* //
-// This is intended to be a command-line, memoized and rate-limited Twitter  //
-// API client                                                                //
+// This is a memoized and rate-limited Twitter API client                    //
 // ************************************************************************* //
 
-var
+const
     crypto = require('crypto'),
     // https://github.com/jprichardson/node-fs-extra
     // MIT license
