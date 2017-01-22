@@ -24,10 +24,12 @@ var
 
 const
     APPLICATION = {
+        LOCAL: "im.dico.twitter2rss",
         NAME: "twitter2rss",
         VERSION: "0.9.1"
     },
-    CACHE_FOLDER = path.join(process.env.HOME, ".local", APPLICATION.NAME, "cache"),
+    CACHE_FOLDER = path.join(process.env.HOME, ".local", APPLICATION.LOCAL, "cache"),
+    LIMITERS_FOLDER = path.join(process.env.HOME, ".local", APPLICATION.LOCAL, "limiters"),
     COMMANDS = [ "lists" ],
     DEFAULT_OPTIONS = {
         "consumerkey": { "default": process.env.TWITTER2RSS_CONSUMER_KEY },
@@ -92,7 +94,7 @@ var
         "timestamp": new Date(),
         "arguments": argv,
     },
-    rateLimiter15PerMinute = new RateLimiter("im.dico." + APPLICATION.NAME, 15, "minute"),
+    rateLimiter15PerMinute = new RateLimiter("limiter-15-per-minute", 15, "minute", { "local": LIMITERS_FOLDER }),
     prefixHashForMemoization = crypto.createHash('sha1');
 
 // calculate the hash for memoization from some parts of the configuration
@@ -111,8 +113,9 @@ prefixHashForMemoization =
 try {
     // TODO: this is suitable to recent Fedora distros, but what about other OS's?
     fs.ensureDirSync(CACHE_FOLDER);
+    fs.ensureDirSync(LIMITERS_FOLDER);
 } catch (e) {
-    console.error(new Error("Error creating the memoization cache folder."));
+    console.error(new Error("Error creating the application folders."));
     process.exit(1);
 }
 
