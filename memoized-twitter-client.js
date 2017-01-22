@@ -88,7 +88,9 @@ var Twitter = function (options) {
         // list/lists
         rateLimiter15Per15Minutes = new RateLimiter("limiter-15-per-15minutes", 15, 900000, { "local": LIMITERS_FOLDER }),
         // list/members
-        rateLimiter75Per15Minutes = new RateLimiter("limiter-75-per-15minutes", 900, 900000, { "local": LIMITERS_FOLDER });
+        rateLimiter75Per15Minutes = new RateLimiter("limiter-75-per-15minutes", 75, 900000, { "local": LIMITERS_FOLDER }),
+        // list/statuses
+        rateLimiter900Per15Minutes = new RateLimiter("limiter-900-per-15minutes", 900, 900000, { "local": LIMITERS_FOLDER });
 
     // TODO: some garbage collection
 
@@ -213,9 +215,54 @@ var Twitter = function (options) {
         });
     };
 
+    var getListsStatuses = (parameters, callback) => {
+        if (!callback) { callback = parameters; parameters = { }; }
+        rateLimiter900Per15Minutes.removeTokens(1, (err) => {
+            twitterClient.get(
+                "lists/statuses.json",
+                parameters,
+                function (err, statuses, response) {
+                    if (err) {
+                        console.error("Failed querying Twitter API for list statuses, with error message: " + err.message);
+                        return process.exit(1);
+                    }
+                    callback(null, statuses);
+                }
+            );
+        });
+    };
+
+    var getListsStatusesMemoized = (parameters, callback) => {
+        if (!callback) { callback = parameters; parameters = { }; }
+        const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
+        var timestamp = new Date(),
+            prefixHashForMemoization = crypto.createHash('sha1');
+        prefixHashForMemoization =
+            "getListsStatuses" +
+            "_" +
+            prefixHashForMemoization.update(stringify({
+                "application": APPLICATION,
+                "twitter_options": options,
+                "parameters": parameters
+            })).digest('hex') +
+            "_";
+        getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
+            if (timestamp - latestCacheTimestamp <= BUFFER) {
+                loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
+            } else {
+                getListsStatuses(parameters, (err, results)=> {
+                    saveCache(prefixHashForMemoization, timestamp, results, err => {
+                        callback(null, results);
+                    });
+                });
+            }
+        });
+    };
+
     return {
         "getListsList": getListsListMemoized,
-        "getListsMembers": getListsMembersMemoized
+        "getListsMembers": getListsMembersMemoized,
+        "getListsStatuses": getListsStatusesMemoized
     };
 
 }
