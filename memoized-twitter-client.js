@@ -106,9 +106,10 @@ var Twitter = function (options) {
     }
 
     var loadCache = (prefixHashForMemoization, timestamp, callback) => {
-        fs.readFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), { "encoding": "utf8" }, (err, text) => {
+        var cacheFilename = path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp));
+        fs.readFile(cacheFilename, { "encoding": "utf8" }, (err, text) => {
             if (err) {
-                console.error("Failed reading from cache, with error message: " + err.message);
+                console.error("Failed reading file " + cacheFilename + " + from cache, with error message: " + err.message);
                 return process.exit(1);
             }
             callback(null, JSON.parse(text));
@@ -116,9 +117,10 @@ var Twitter = function (options) {
     }
 
     var saveCache = (prefixHashForMemoization, timestamp, content, callback) => {
-        fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), JSON.stringify(content), { "encoding": "utf8" }, err => {
+        var cacheFilename = path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp));
+        fs.writeFile(cacheFilename, JSON.stringify(content), { "encoding": "utf8" }, err => {
             if (err) {
-                console.error("Error writing the cache file: " + err.message);
+                console.error("Error writing file " + cacheFilename + " to cache, with error message: " + err.message);
                 return process.exit(1);
             }
             callback(null);
@@ -159,7 +161,7 @@ var Twitter = function (options) {
                     parameters,
                     function (err, results, response) {
                         if (err) {
-                            console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
+                            console.error("Failed calling the Twitter API " + apiconf.endpoint + ", with error message: " + err.message);
                             return process.exit(1);
                         }
                         callback(null, results);
