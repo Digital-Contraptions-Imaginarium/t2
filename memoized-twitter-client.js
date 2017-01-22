@@ -84,7 +84,11 @@ var Twitter = function (options) {
         process.exit(1);
     }
 
-    var rateLimiter15PerMinute = new RateLimiter("limiter-15-per-minute", 15, "minute", { "local": LIMITERS_FOLDER });
+    var
+        // list/lists
+        rateLimiter15Per15Minutes = new RateLimiter("limiter-15-per-15minutes", 15, 900000, { "local": LIMITERS_FOLDER }),
+        // list/members
+        rateLimiter75Per15Minutes = new RateLimiter("limiter-75-per-15minutes", 900, 900000, { "local": LIMITERS_FOLDER });
 
     // TODO: some garbage collection
 
@@ -121,11 +125,12 @@ var Twitter = function (options) {
         });
     }
 
-    var getLists = (callback, results) => {
-        rateLimiter15PerMinute.removeTokens(1, (err) => {
+    var getListsList = (parameters, callback) => {
+        if (!callback) { callback = parameters; parameters = { }; }
+        rateLimiter15Per15Minutes.removeTokens(1, (err) => {
             twitterClient.get(
                 "lists/list.json",
-                { }, // any params?
+                parameters,
                 function (err, lists, response) {
                     if (err) {
                         console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
@@ -137,26 +142,69 @@ var Twitter = function (options) {
         });
     };
 
-    var getListsMemoized = (callback, results) => {
+    var getListsListMemoized = (parameters, callback) => {
+        if (!callback) { callback = parameters; parameters = { }; }
         const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
         var timestamp = new Date(),
             prefixHashForMemoization = crypto.createHash('sha1');
         prefixHashForMemoization =
-            "getLists" +
+            "getListsList" +
             "_" +
             prefixHashForMemoization.update(stringify({
                 "application": APPLICATION,
                 "twitter_options": options,
+                "parameters": parameters
             })).digest('hex') +
             "_";
         getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
             if (timestamp - latestCacheTimestamp <= BUFFER) {
-                // the cache is still valid
-                // console.log("READING FROM THE CACHE");
                 loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
             } else {
-                // console.log("FETCHING LIVE");
-                getLists((err, results)=> {
+                getListsList(parameters, (err, results)=> {
+                    saveCache(prefixHashForMemoization, timestamp, results, err => {
+                        callback(null, results);
+                    });
+                });
+            }
+        });
+    };
+
+    var getListsMembers = (parameters, callback) => {
+        if (!callback) { callback = parameters; parameters = { }; }
+        rateLimiter75Per15Minutes.removeTokens(1, (err) => {
+            twitterClient.get(
+                "lists/members.json",
+                parameters,
+                function (err, members, response) {
+                    if (err) {
+                        console.error("Failed querying Twitter API for metadata about list members, with error message: " + err.message);
+                        return process.exit(1);
+                    }
+                    callback(null, members);
+                }
+            );
+        });
+    };
+
+    var getListsMembersMemoized = (parameters, callback) => {
+        if (!callback) { callback = parameters; parameters = { }; }
+        const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
+        var timestamp = new Date(),
+            prefixHashForMemoization = crypto.createHash('sha1');
+        prefixHashForMemoization =
+            "getListsMembers" +
+            "_" +
+            prefixHashForMemoization.update(stringify({
+                "application": APPLICATION,
+                "twitter_options": options,
+                "parameters": parameters
+            })).digest('hex') +
+            "_";
+        getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
+            if (timestamp - latestCacheTimestamp <= BUFFER) {
+                loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
+            } else {
+                getListsMembers(parameters, (err, results)=> {
                     saveCache(prefixHashForMemoization, timestamp, results, err => {
                         callback(null, results);
                     });
@@ -166,7 +214,8 @@ var Twitter = function (options) {
     };
 
     return {
-        "getLists": getListsMemoized
+        "getListsList": getListsListMemoized,
+        "getListsMembers": getListsMembersMemoized
     };
 
 }
