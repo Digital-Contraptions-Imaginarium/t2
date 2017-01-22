@@ -42,6 +42,8 @@ const hashString2date = s => new Date(
 
 var Twitter = function (options) {
 
+    options = options ? options : { };
+
     // check the Twitter credentials
     options.consumerkey = options.consumerkey ? options.consumerkey : process.env.TWITTER2RSS_CONSUMER_KEY;
     options.consumersecret = options.consumersecret ? options.consumersecret : process.env.TWITTER2RSS_CONSUMER_SECRET;
@@ -99,13 +101,23 @@ var Twitter = function (options) {
         });
     }
 
-    var retrieveCache = (prefixHashForMemoization, timestamp, callback) => {
-        fs.readFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), (err, text) => {
+    var loadCache = (prefixHashForMemoization, timestamp, callback) => {
+        fs.readFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), { "encoding": "utf8" }, (err, text) => {
             if (err) {
                 console.error("Failed reading from cache, with error message: " + err.message);
                 return process.exit(1);
             }
             callback(null, JSON.parse(text));
+        });
+    }
+
+    var saveCache = (prefixHashForMemoization, timestamp, content, callback) => {
+        fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), JSON.stringify(content), { "encoding": "utf8" }, err => {
+            if (err) {
+                console.error("Error writing the cache file: " + err.message);
+                return process.exit(1);
+            }
+            callback(null);
         });
     }
 
@@ -119,7 +131,7 @@ var Twitter = function (options) {
                         console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
                         return process.exit(1);
                     }
-                    callback(null, response.body);
+                    callback(null, lists);
                 }
             );
         });
@@ -140,16 +152,12 @@ var Twitter = function (options) {
         getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
             if (timestamp - latestCacheTimestamp <= BUFFER) {
                 // the cache is still valid
-                console.log("READING FROM THE CACHE");
-                retrieveCache(prefixHashForMemoization, latestCacheTimestamp, callback);
+                // console.log("READING FROM THE CACHE");
+                loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
             } else {
-                console.log("FETCHING LIVE");
+                // console.log("FETCHING LIVE");
                 getLists((err, results)=> {
-                    fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), JSON.stringify(results), err => {
-                        if (err) {
-                            console.error("Error writing the cache file: " + err.message);
-                            return process.exit(1);
-                        }
+                    saveCache(prefixHashForMemoization, timestamp, results, err => {
                         callback(null, results);
                     });
                 });
