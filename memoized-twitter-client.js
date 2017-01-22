@@ -139,9 +139,9 @@ var Twitter = function (options) {
         // Each configuration generates two functions: a non memoized wrapper to
         // the Twitter API, that is not exported by the library, and a memoized
         // one, that is.
-        { "endpoint": "lists/list.json", "buffer": 18000, "limiting": rateLimiter15Per15Minutes },
-        { "endpoint": "lists/members.json", "buffer": 18000, "limiting": rateLimiter75Per15Minutes },
-        { "endpoint": "lists/statuses.json", "buffer": 18000, "limiting": rateLimiter900Per15Minutes }
+        { "endpoint": "lists/list.json", "buffer": 900000, "limiting": rateLimiter15Per15Minutes },
+        { "endpoint": "lists/members.json", "buffer": 900000, "limiting": rateLimiter75Per15Minutes },
+        { "endpoint": "lists/statuses.json", "buffer": 900000, "limiting": rateLimiter900Per15Minutes }
     ];
 
     var forExporting = { };
@@ -169,7 +169,7 @@ var Twitter = function (options) {
 
         forExporting[functionName] = (parameters, callback) => {
             if (!callback) { callback = parameters; parameters = { }; }
-            const BUFFER = apiconf.buffer; // in no case the request will be made more often than every...
+            const BUFFER = apiconf.buffer; 
             var timestamp = new Date(),
                 prefixHashForMemoization = crypto.createHash('sha1');
             prefixHashForMemoization =
