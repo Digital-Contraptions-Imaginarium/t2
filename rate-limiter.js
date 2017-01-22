@@ -58,7 +58,7 @@ var RateLimiter = function (resourceName, occurrences, timeInterval, options) {
 
     this.resourceName = resourceName;
     this.occurrences = occurrences;
-    switch(timeInterval.toLowerCase()) {
+    switch(timeInterval) {
         case "second":
             this.timeInterval = 1000;
             break;
@@ -72,7 +72,7 @@ var RateLimiter = function (resourceName, occurrences, timeInterval, options) {
             this.timeInterval = 86400000;
             break;
         default:
-            this.timeInterval = timeInterval;
+            this.timeInterval = parseInt(timeInterval);
     }
     this.options = options ? options : { };
     // TODO: this is suitable to Fedora systems only, what about other Linux distro or other OS's?
