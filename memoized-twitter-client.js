@@ -127,143 +127,75 @@ var Twitter = function (options) {
         });
     }
 
-    var getListsList = (parameters, callback) => {
-        if (!callback) { callback = parameters; parameters = { }; }
-        rateLimiter15Per15Minutes.removeTokens(1, (err) => {
-            twitterClient.get(
-                "lists/list.json",
-                parameters,
-                function (err, lists, response) {
-                    if (err) {
-                        console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
-                        return process.exit(1);
-                    }
-                    callback(null, lists);
-                }
-            );
-        });
-    };
+    // supported APIs
+    const API_CONFIGURATIONS = [
+        // see https://dev.twitter.com/rest/public/rate-limits ; in the following:
+        // - "endpoint" is the official Twitter API endpoint,
+        // - "buffer" is the no. of milliseconds the results of calling the APIs
+        //   will be cached, e.g. the API won't be called again unless at latest
+        //   18000 milliseconds have elapsed
+        // - "limiting" is a rate-limiter object that implements the API's
+        //   respective rate limit as specified in the web page above
+        // Each configuration generates two functions: a non memoized wrapper to
+        // the Twitter API, that is not exported by the library, and a memoized
+        // one, that is.
+        { "endpoint": "lists/list.json", "buffer": 18000, "limiting": rateLimiter15Per15Minutes },
+        { "endpoint": "lists/members.json", "buffer": 18000, "limiting": rateLimiter75Per15Minutes },
+        { "endpoint": "lists/statuses.json", "buffer": 18000, "limiting": rateLimiter900Per15Minutes }
+    ];
 
-    var getListsListMemoized = (parameters, callback) => {
-        if (!callback) { callback = parameters; parameters = { }; }
-        const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
-        var timestamp = new Date(),
-            prefixHashForMemoization = crypto.createHash('sha1');
-        prefixHashForMemoization =
-            "getListsList" +
-            "_" +
-            prefixHashForMemoization.update(stringify({
-                "application": APPLICATION,
-                "twitter_options": options,
-                "parameters": parameters
-            })).digest('hex') +
-            "_";
-        getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
-            if (timestamp - latestCacheTimestamp <= BUFFER) {
-                loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
-            } else {
-                getListsList(parameters, (err, results)=> {
-                    saveCache(prefixHashForMemoization, timestamp, results, err => {
+    var forExporting = { };
+    API_CONFIGURATIONS.forEach(apiconf => {
+
+        var functionName = apiconf.endpoint.match(/(^.+)\/(.+)\.json/);
+        functionName = "get" + functionName[1].substring(0, 1).toUpperCase() + functionName[1].substring(1, functionName[1].length) + functionName[2].substring(0, 1).toUpperCase() + functionName[2].substring(1, functionName[2].length);
+
+        var nonMemoizedFunction = (parameters, callback) => {
+            if (!callback) { callback = parameters; parameters = { }; }
+            apiconf.limiting.removeTokens(1, (err) => {
+                twitterClient.get(
+                    "lists/list.json",
+                    parameters,
+                    function (err, results, response) {
+                        if (err) {
+                            console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
+                            return process.exit(1);
+                        }
                         callback(null, results);
-                    });
-                });
-            }
-        });
-    };
-
-    var getListsMembers = (parameters, callback) => {
-        if (!callback) { callback = parameters; parameters = { }; }
-        rateLimiter75Per15Minutes.removeTokens(1, (err) => {
-            twitterClient.get(
-                "lists/members.json",
-                parameters,
-                function (err, members, response) {
-                    if (err) {
-                        console.error("Failed querying Twitter API for metadata about list members, with error message: " + err.message);
-                        return process.exit(1);
                     }
-                    callback(null, members);
-                }
-            );
-        });
-    };
+                );
+            });
+        };
 
-    var getListsMembersMemoized = (parameters, callback) => {
-        if (!callback) { callback = parameters; parameters = { }; }
-        const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
-        var timestamp = new Date(),
-            prefixHashForMemoization = crypto.createHash('sha1');
-        prefixHashForMemoization =
-            "getListsMembers" +
-            "_" +
-            prefixHashForMemoization.update(stringify({
-                "application": APPLICATION,
-                "twitter_options": options,
-                "parameters": parameters
-            })).digest('hex') +
-            "_";
-        getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
-            if (timestamp - latestCacheTimestamp <= BUFFER) {
-                loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
-            } else {
-                getListsMembers(parameters, (err, results)=> {
-                    saveCache(prefixHashForMemoization, timestamp, results, err => {
-                        callback(null, results);
+        forExporting[functionName] = (parameters, callback) => {
+            if (!callback) { callback = parameters; parameters = { }; }
+            const BUFFER = apiconf.buffer; // in no case the request will be made more often than every...
+            var timestamp = new Date(),
+                prefixHashForMemoization = crypto.createHash('sha1');
+            prefixHashForMemoization =
+                functionName +
+                "_" +
+                prefixHashForMemoization.update(stringify({
+                    "application": APPLICATION,
+                    "twitter_options": options,
+                    "parameters": parameters
+                })).digest('hex') +
+                "_";
+            getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
+                if (timestamp - latestCacheTimestamp <= BUFFER) {
+                    loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
+                } else {
+                    nonMemoizedFunction(parameters, (err, results)=> {
+                        saveCache(prefixHashForMemoization, timestamp, results, err => {
+                            callback(null, results);
+                        });
                     });
-                });
-            }
-        });
-    };
-
-    var getListsStatuses = (parameters, callback) => {
-        if (!callback) { callback = parameters; parameters = { }; }
-        rateLimiter900Per15Minutes.removeTokens(1, (err) => {
-            twitterClient.get(
-                "lists/statuses.json",
-                parameters,
-                function (err, statuses, response) {
-                    if (err) {
-                        console.error("Failed querying Twitter API for list statuses, with error message: " + err.message);
-                        return process.exit(1);
-                    }
-                    callback(null, statuses);
                 }
-            );
-        });
-    };
+            });
+        }
 
-    var getListsStatusesMemoized = (parameters, callback) => {
-        if (!callback) { callback = parameters; parameters = { }; }
-        const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
-        var timestamp = new Date(),
-            prefixHashForMemoization = crypto.createHash('sha1');
-        prefixHashForMemoization =
-            "getListsStatuses" +
-            "_" +
-            prefixHashForMemoization.update(stringify({
-                "application": APPLICATION,
-                "twitter_options": options,
-                "parameters": parameters
-            })).digest('hex') +
-            "_";
-        getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
-            if (timestamp - latestCacheTimestamp <= BUFFER) {
-                loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
-            } else {
-                getListsStatuses(parameters, (err, results)=> {
-                    saveCache(prefixHashForMemoization, timestamp, results, err => {
-                        callback(null, results);
-                    });
-                });
-            }
-        });
-    };
-
-    return {
-        "getListsList": getListsListMemoized,
-        "getListsMembers": getListsMembersMemoized,
-        "getListsStatuses": getListsStatusesMemoized
-    };
+    });
+    return forExporting;
 
 }
 
