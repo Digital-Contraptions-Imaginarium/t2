@@ -85,11 +85,9 @@ var Twitter = function (options) {
     }
 
     var
-        // list/lists
         rateLimiter15Per15Minutes = new RateLimiter("limiter-15-per-15minutes", 15, 900000, { "local": LIMITERS_FOLDER }),
-        // list/members
         rateLimiter75Per15Minutes = new RateLimiter("limiter-75-per-15minutes", 75, 900000, { "local": LIMITERS_FOLDER }),
-        // list/statuses
+        rateLimiter450Per15Minutes = new RateLimiter("limiter-450-per-15minutes", 450, 900000, { "local": LIMITERS_FOLDER }),
         rateLimiter900Per15Minutes = new RateLimiter("limiter-900-per-15minutes", 900, 900000, { "local": LIMITERS_FOLDER });
 
     // TODO: some garbage collection
@@ -141,20 +139,23 @@ var Twitter = function (options) {
         // one, that is.
         { "endpoint": "lists/list.json", "buffer": 900000, "limiting": rateLimiter15Per15Minutes },
         { "endpoint": "lists/members.json", "buffer": 900000, "limiting": rateLimiter75Per15Minutes },
-        { "endpoint": "lists/statuses.json", "buffer": 900000, "limiting": rateLimiter900Per15Minutes }
+        { "endpoint": "lists/statuses.json", "buffer": 900000, "limiting": rateLimiter900Per15Minutes },
+        { "endpoint": "search/tweets.json", "buffer": 900000, "limiting": rateLimiter450Per15Minutes },
     ];
 
     var forExporting = { };
     API_CONFIGURATIONS.forEach(apiconf => {
 
         var functionName = apiconf.endpoint.match(/(^.+)\/(.+)\.json/);
-        functionName = "get" + functionName[1].substring(0, 1).toUpperCase() + functionName[1].substring(1, functionName[1].length) + functionName[2].substring(0, 1).toUpperCase() + functionName[2].substring(1, functionName[2].length);
+        functionName = "get" +
+            functionName[1].substring(0, 1).toUpperCase() + functionName[1].substring(1, functionName[1].length) +
+            functionName[2].substring(0, 1).toUpperCase() + functionName[2].substring(1, functionName[2].length);
 
         var nonMemoizedFunction = (parameters, callback) => {
             if (!callback) { callback = parameters; parameters = { }; }
             apiconf.limiting.removeTokens(1, (err) => {
                 twitterClient.get(
-                    "lists/list.json",
+                    apiconf.endpoint,
                     parameters,
                     function (err, results, response) {
                         if (err) {
@@ -169,7 +170,7 @@ var Twitter = function (options) {
 
         forExporting[functionName] = (parameters, callback) => {
             if (!callback) { callback = parameters; parameters = { }; }
-            const BUFFER = apiconf.buffer; 
+            const BUFFER = apiconf.buffer;
             var timestamp = new Date(),
                 prefixHashForMemoization = crypto.createHash('sha1');
             prefixHashForMemoization =
