@@ -109,8 +109,24 @@ var Twitter = function (options) {
         });
     }
 
-    this.getLists = (callback, results) => {
+    var getLists = (callback, results) => {
+        rateLimiter15PerMinute.removeTokens(1, (err) => {
+            twitterClient.get(
+                "lists/list.json",
+                { }, // any params?
+                function (err, lists, response) {
+                    if (err) {
+                        console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
+                        return process.exit(1);
+                    }
+                    callback(null, response.body);
+                }
+            );
+        });
+    };
 
+    var getListsMemoized = (callback, results) => {
+        const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
         var timestamp = new Date(),
             prefixHashForMemoization = crypto.createHash('sha1');
         prefixHashForMemoization =
@@ -121,36 +137,28 @@ var Twitter = function (options) {
                 "twitter_options": options,
             })).digest('hex') +
             "_";
-
-        const BUFFER = 18000; // in no case the request will be made more often than every 5 minutes
         getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
             if (timestamp - latestCacheTimestamp <= BUFFER) {
                 // the cache is still valid
                 console.log("READING FROM THE CACHE");
                 retrieveCache(prefixHashForMemoization, latestCacheTimestamp, callback);
             } else {
-                rateLimiter15PerMinute.removeTokens(1, (err) => {
-                    console.log("FETCHING LIVE");
-                    twitterClient.get(
-                        "lists/list.json",
-                        { }, // any params?
-                        function (err, lists, response) {
-                            if (err) {
-                                console.error("Failed querying Twitter API for metadata about all lists, with error message: " + err.message);
-                                return process.exit(1);
-                            }
-                            fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), JSON.stringify(response.body), err => {
-                                if (err) {
-                                    console.error("Error writing the cache file: " + err.message);
-                                    return process.exit(1);
-                                }
-                                callback(null, response);
-                            });
+                console.log("FETCHING LIVE");
+                getLists((err, results)=> {
+                    fs.writeFile(path.join(CACHE_FOLDER, prefixHashForMemoization + date2HashString(timestamp)), JSON.stringify(results), err => {
+                        if (err) {
+                            console.error("Error writing the cache file: " + err.message);
+                            return process.exit(1);
                         }
-                    );
+                        callback(null, results);
+                    });
                 });
             }
         });
+    };
+
+    return {
+        "getLists": getListsMemoized
     };
 
 }
