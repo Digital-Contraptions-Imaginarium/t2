@@ -12,9 +12,8 @@ const
     APPLICATION = {
         LOCAL: "im.dico.twitter2rss",
         NAME: "twitter2rss-client",
-        VERSION: "0.9.1"
-    },
-    COMMANDS = [ "lists" ];
+        VERSION: "0.9.2"
+    };
 
 var
     // https://github.com/yargs/yargs
@@ -27,17 +26,7 @@ var
             "tokenkey": process.env.TWITTER2RSS_ACCESS_TOKEN_KEY,
             "tokensecret": process.env.TWITTER2RSS_ACCESS_TOKEN_SECRET
         })
-        .demandCommand(1, "You must specify a <command>, that is one of: " + COMMANDS.sort().join(", "))
-        .check((argv, opts) => {
-            // console.log("argv: " + JSON.stringify(argv));
-            // console.log("opts: " + JSON.stringify(opts));
-            // check the command is one of the possible ones
-            if (!_.contains(COMMANDS, argv._[0])) { throw(new Error("<command> must be one of: " + COMMANDS.sort().join(", "))); return false; }
-            return true;
-        })
-        // NOTE: because of a bug in the .command directive, it is not used here, see
-        // https://github.com/yargs/yargs/issues/762 ; I've stopped
-        // implementing checks on the command line while waiting for a resolution to this.
+        .demandCommand(1, "You must specify a <command>.")
         .epilog(APPLICATION.NAME + " v" + APPLICATION.VERSION + "\nThis software is copyright (C) 2017 Digital Contraptions Imaginarium Ltd. 2017 and released under the MIT Licence (MIT).")
         .argv;
 
@@ -48,6 +37,20 @@ var twitter = new Twitter({
     "tokensecret": argv.tokensecret
 });
 
-twitter.getLists((err, response) => {
-    console.log(JSON.stringify(response));
+var functionName = argv._[0].match(/^(.+)\/(.+)$/);
+functionName = "get" +
+    functionName[1].substring(0, 1).toUpperCase() + functionName[1].substring(1, functionName[1].length) +
+    functionName[2].substring(0, 1).toUpperCase() + functionName[2].substring(1, functionName[2].length);
+
+// drop from Yargs' argv any element that must not be handed over to the actual Twitter API
+_.keys(argv)
+    .filter(key => _.any([ "^_$", "^\\$", "^consumerkey$", "^consumersecret$", "^tokenkey$", "^tokensecret$" ], re => key.match(new RegExp(re))))
+    .forEach(key => { delete argv[key]; });
+// call my memoized wrapper, print the results to stdout and exit
+twitter[functionName](argv, (err, results) => {
+    if (err) {
+        console.error("Failed with error message: " + err.message);
+        process.exit(1);
+    }
+    console.log(JSON.stringify(results));
 });
