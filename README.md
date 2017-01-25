@@ -40,4 +40,10 @@ $ node t2cli.js search/tweets --result_type recent --q trump --post 'r => JSON.s
 $
 ```
 
+You can write the same in an asynchronous fashion, as in:
+
+```
+$ node t2cli.js search/tweets --result_type recent --q trump  --post '(r, callback) => callback(null, r.statuses.map(s => s.text))'
+```
+
 Note that, to do a good job, you often need to know the exact format of the response you get from the native Twitter API, e.g. in the second example all the results are found in an array named *statuses*. This is also why *t2* is useful, as caching and rate limiting allow you to repeat the same request with different ```--post``` arguments without the need to fetch the live data again every time or worrying of breaking the limits on the API usage.
