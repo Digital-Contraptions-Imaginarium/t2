@@ -16,7 +16,7 @@ const
     APPLICATION = {
         LOCAL: "im.dico.t2cli",
         NAME: "t2cli",
-        VERSION: "0.0.1"
+        VERSION: "0.1.0"
     };
 
 var
@@ -24,12 +24,6 @@ var
     // MIT/X11 license
     argv = require('yargs')
         .usage('Usage: $0 <command> [options]')
-        .default({
-            "consumerkey": process.env.TWITTER2RSS_CONSUMER_KEY,
-            "consumersecret": process.env.TWITTER2RSS_CONSUMER_SECRET,
-            "tokenkey": process.env.TWITTER2RSS_ACCESS_TOKEN_KEY,
-            "tokensecret": process.env.TWITTER2RSS_ACCESS_TOKEN_SECRET
-        })
         .demandCommand(1, "You must specify a <command>.")
         .epilog(APPLICATION.NAME + " v" + APPLICATION.VERSION + "\nThis software is copyright (C) 2017 Digital Contraptions Imaginarium Ltd. 2017 and released under the MIT Licence (MIT).")
         .argv;
@@ -40,10 +34,10 @@ var fileExistsSync = f => {
 }
 
 var twitter = new T2({
-    "consumerkey": argv.consumerkey,
-    "consumersecret": argv.consumersecret,
-    "tokenkey": argv.tokenkey,
-    "tokensecret": argv.tokensecret
+    "consumerkey": argv.consumerkey | process.env.TWITTER2RSS_CONSUMER_KEY,
+    "consumersecret": argv.consumersecret | process.env.TWITTER2RSS_CONSUMER_SECRET,
+    "tokenkey": argv.tokenkey | process.env.TWITTER2RSS_ACCESS_TOKEN_KEY,
+    "tokensecret": argv.tokensecret | process.env.TWITTER2RSS_ACCESS_TOKEN_SECRET
 });
 
 // TODO: this code is duplicated in t2.js, too, you can do better
