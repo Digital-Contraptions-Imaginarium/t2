@@ -22,7 +22,7 @@ where:
 
 When not specified on the command line, *t2cli* attempts reading the credentials from the user environment in the variables ```TWITTER2RSS_CONSUMER_KEY```, ```TWITTER2RSS_CONSUMER_SECRET```, ```TWITTER2RSS_ACCESS_TOKEN_KEY``` and ```TWITTER2RSS_ACCESS_TOKEN_SECRET```.
 
-The ```--post``` *t2* option can be used to run one or more transformations over the API results, before displaying, expressed as a synchronous or asynchronous JavaScript function. E.g. a very useful transformation is ```--post 'r => r.map(x => JSON.stringify(x)).join("\n")' ``` that makes one JSON array of objects - as in the results of the original ```lists/list``` API - into [JSONL](http://jsonlines.org/): one JSON object per line.
+The ```--post``` *t2* option can be used to run one or more transformations over the API results, before displaying, expressed as a synchronous or asynchronous JavaScript function. E.g. a very useful transformation is ```--post 'r => r.map(x => JSON.stringify(x)).join("\n")' ``` that makes one JSON array of objects - as in the results of the original ```lists/list``` API - into [JSONL](http://jsonlines.org/): one JSON object per line. ```--post``` can also reference a text file with the code you want to execute on the results.
 
 In the example below, for example, we fetch the lists that belong to user [@dicoim](https://twitter.com/dicoim), pick the third list only, and transform the output from JSON to JSONL.
 
@@ -30,6 +30,12 @@ In the example below, for example, we fetch the lists that belong to user [@dico
 $ node t2cli.js lists/list --user_id dicoim --post 'r => [ r[2] ]' --post 'r => r.map(x => JSON.stringify(x)).join("\n")'
 {"id":756036774724571100,"id_str":"756036774724571136","name":"next economy","uri":"/dicoim/lists/next-economy","subscriber_count":0,"member_count":26,"mode":"public","description":"See https://github.com/Digital-Contraptions-Imaginarium/newsbeuter-configuration","slug":"next-economy","full_name":"@dicoim/next-economy","created_at":"Thu Jul 21 08:03:08 +0000 2016","following":true,"user":{"id":14214993,"id_str":"14214993","name":"DiCo.Im","screen_name":"dicoim","location":"London, UK","description":"We are Digital Contraptions Imaginarium: a small and independent tech consultancy firm in London, UK, that brings tech, people and data together.","url":"https://t.co/V0ymu49mBn","entities":{"url":{"urls":[{"url":"https://t.co/V0ymu49mBn","expanded_url":"https://dico.im","display_url":"dico.im","indices":[0,23]}]},"description":{"urls":[]}},"protected":false,"followers_count":869,"friends_count":1320,"listed_count":180,"created_at":"Tue Mar 25 12:26:56 +0000 2008","favourites_count":2409,"utc_offset":0,"time_zone":"London","geo_enabled":false,"verified":false,"statuses_count":1851,"lang":"en","contributors_enabled":false,"is_translator":false,"is_translation_enabled":false,"profile_background_color":"000000","profile_background_image_url":"http://abs.twimg.com/images/themes/theme1/bg.png","profile_background_image_url_https":"https://abs.twimg.com/images/themes/theme1/bg.png","profile_background_tile":false,"profile_image_url":"http://pbs.twimg.com/profile_images/756014052225212417/VtssPRWk_normal.jpg","profile_image_url_https":"https://pbs.twimg.com/profile_images/756014052225212417/VtssPRWk_normal.jpg","profile_banner_url":"https://pbs.twimg.com/profile_banners/14214993/1469083399","profile_link_color":"DB5A3D","profile_sidebar_border_color":"000000","profile_sidebar_fill_color":"000000","profile_text_color":"000000","profile_use_background_image":false,"has_extended_profile":false,"default_profile":false,"default_profile_image":false,"following":false,"follow_request_sent":false,"notifications":false,"translator_type":"none"}}
 $
+```
+
+The same can be achieved by referencing the ```JSONArray2JSONL.js``` example script in the ```utils``` folder.
+
+```
+$ node t2cli.js lists/list --user_id dicoim --post 'r => [ r[2] ]' --post utils/JSONArray2JSONL.js
 ```
 
 In this other example we search for the most recent tweets with the word "trump" in them, drop all the metadata and display just the text:

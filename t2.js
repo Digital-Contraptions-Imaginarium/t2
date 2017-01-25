@@ -51,7 +51,7 @@ var Twitter = function (options) {
         options.tokenkey,
         options.tokensecret
     ], x => (!_.isString(x) || (x === "")))) {
-        throw(new Error("The Twitter credentials are not specified either in the environment or the command line."));
+        throw(new Error("The Twitter credentials were not specified in the constructor."));
         process.exit(1);
     }
 

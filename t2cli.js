@@ -4,6 +4,9 @@
 
 const
     async = require("async"),
+    // https://github.com/jprichardson/node-fs-extra
+    // MIT license
+    fs = require("fs-extra"),
     T2 = require("./t2").Twitter,
     // http://underscorejs.org/
     // custom license, MIT-derived?
@@ -31,6 +34,11 @@ var
         .epilog(APPLICATION.NAME + " v" + APPLICATION.VERSION + "\nThis software is copyright (C) 2017 Digital Contraptions Imaginarium Ltd. 2017 and released under the MIT Licence (MIT).")
         .argv;
 
+var fileExistsSync = f => {
+    // TODO if the original from the *fs* library was deprecated there must be a reason...
+    var ok = true; try { fs.statSync(f); } catch (err) { ok = false; }; return ok;
+}
+
 var twitter = new T2({
     "consumerkey": argv.consumerkey,
     "consumersecret": argv.consumersecret,
@@ -56,7 +64,7 @@ twitter[functionName](twitterParameters, (err, results) => {
         process.exit(1);
     }
     async.reduce(!argv.post ? [ "x => JSON.stringify(x)" ] : [ ].concat(argv.post), results, (memo, p, callback) => {
-        p = eval(p);
+        p = eval(fileExistsSync(p) ? fs.readFileSync(p, { "encoding": "utf8" }) : p);
         if (p.length > 1) {
             // the --post function is asynchronous
             return p(memo, callback);
