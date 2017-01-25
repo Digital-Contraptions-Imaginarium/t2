@@ -11,9 +11,9 @@ const
 
 const
     APPLICATION = {
-        LOCAL: "im.dico.twitter2rss",
-        NAME: "twitter2rss-client",
-        VERSION: "0.9.2"
+        LOCAL: "im.dico.t2cli",
+        NAME: "t2cli",
+        VERSION: "0.0.1"
     };
 
 var
@@ -38,6 +38,7 @@ var twitter = new T2({
     "tokensecret": argv.tokensecret
 });
 
+// TODO: this code is duplicated in t2.js, too, you can do better
 var functionName = argv._[0].match(/^(.+)\/(.+)$/);
 functionName = "get" +
     functionName[1].substring(0, 1).toUpperCase() + functionName[1].substring(1, functionName[1].length) +

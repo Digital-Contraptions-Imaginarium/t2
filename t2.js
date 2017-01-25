@@ -21,9 +21,9 @@ const
 
 const
     APPLICATION = {
-        LOCAL: "im.dico.twitter2rss",
-        NAME: "twitter2rss",
-        VERSION: "0.9.2"
+        LOCAL: "im.dico.t2",
+        NAME: "t2",
+        VERSION: "0.0.1"
     };
 
 const date2HashString = d => d.toISOString().
