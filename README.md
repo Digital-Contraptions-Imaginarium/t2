@@ -1,12 +1,9 @@
-twitter2rss
-===========
-
-Note: this GitHub branch is dedicated to *t2*: a major overhaul of the original *twitter2rss* project that - over time - has grown into something that was too complex for my liking and contrary to my principles for simple and frugal solutions. In this README you find the new documentation only, the old is available at the [*master*](https://github.com/Digital-Contraptions-Imaginarium/twitter2rss) branch.
-
 t2
 ==
 
-*t2* is a Node.js module and command line client for Twitter. It owes its name to [sferik/t](https://github.com/sferik/t): another command line client for Twitter that I aim at replacing in my projects at some point. Differently than other Twitter libraries for Node.js, *t2* was written to be smart about rate limiting and data use in general, support for which are built in.
+*t2* is both a Node.js module and command line client for Twitter. It owes its name to [sferik/t](https://github.com/sferik/t): another incredibly useful command line client for Twitter that I have been using for a long time and I am still using while *t2* is in development. A lot of its work also comes from the need to refactor an older project of mine, [twitter2rss](https://github.com/Digital-Contraptions-Imaginarium/twitter2rss) that had grown into a little monster and needed some serious simplification.
+
+Differently than other Twitter libraries for Node.js, *t2* was written to be smart about rate limiting and data use in general, support for which are built in. **Note that the rate limiting has not been extensively tested yet, so do not take for granted that a heavy use of *t2* won't end up in actually breaking it.**
 
 At the moment of writing, *t2* only supports APIs that "read" content (the "GET" ones).
 
@@ -25,7 +22,7 @@ where:
 
 When not specified on the command line, both *t2cli* and the *t2* library attempt reading the credentials from the user environment in the variables ```TWITTER2RSS_CONSUMER_KEY```, ```TWITTER2RSS_CONSUMER_SECRET```, ```TWITTER2RSS_ACCESS_TOKEN_KEY``` and ```TWITTER2RSS_ACCESS_TOKEN_SECRET```.
 
-The ```--post``` *t2* option can be used to run one or more transformations over the API results, before displaying, expressed as a JavaScript function. E.g. a very useful transformation is ```--post 'r => r.map(x => JSON.stringify(x)).join("\n")' ``` that makes one JSON array of objects - as in the results of the original ```lists/list``` API - into [JSONL](http://jsonlines.org/): one JSON object per line.
+The ```--post``` *t2* option can be used to run one or more transformations over the API results, before displaying, expressed as a synchronous or asynchronous JavaScript function. E.g. a very useful transformation is ```--post 'r => r.map(x => JSON.stringify(x)).join("\n")' ``` that makes one JSON array of objects - as in the results of the original ```lists/list``` API - into [JSONL](http://jsonlines.org/): one JSON object per line.
 
 In the example below, for example, we fetch the lists that belong to user [@dicoim](https://twitter.com/dicoim), pick the third list only, and transform the output from JSON to JSONL.
 

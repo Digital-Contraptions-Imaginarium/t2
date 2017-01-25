@@ -3,6 +3,7 @@
 // ************************************************************************* //
 
 const
+    async = require("async"),
     T2 = require("./t2").Twitter,
     // http://underscorejs.org/
     // custom license, MIT-derived?
@@ -53,9 +54,20 @@ twitter[functionName](twitterParameters, (err, results) => {
         console.error("Failed with error message: " + err.message);
         process.exit(1);
     }
-    try {
-        console.log(!argv.post ? JSON.stringify(results) : [ ].concat(argv.post).reduce((memo, p) => eval(p)(memo), results));
-    } catch (err) {
-        console.error("Undefined error in executing the --post commands.");
-    }
+    async.reduce(!argv.post ? [ "x => JSON.stringify(x)" ] : [ ].concat(argv.post), results, (memo, p, callback) => {
+        p = eval(p);
+        if (p.length > 1) {
+            // the --post function is asynchronous
+            return p(memo, callback);
+        } else {
+            // the --post function is synchronous
+            callback(null, p(memo));
+        }
+    }, (err, results) => {
+        if (err) {
+            console.error("Undefined error in executing the --post commands.");
+            process.exit(1);
+        }
+        console.log(results);
+    });
 });
