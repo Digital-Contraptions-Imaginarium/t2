@@ -1,0 +1,27 @@
+{
+  "name": "twitter2rss",
+  "version": "0.9.1",
+  "description": "twitter2rss",
+  "main": "new.js",
+  "dependencies": {
+    "fs-extra": "^2.0.0",
+    "json-stable-stringify": "^1.0.1",
+    "twitter": "^1.7.0",
+    "underscore": "^1.8.3",
+    "yargs": "^6.6.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Digital-Contraptions-Imaginarium/twitter2rss.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Digital-Contraptions-Imaginarium/twitter2rss/issues"
+  },
+  "homepage": "https://github.com/Digital-Contraptions-Imaginarium/twitter2rss#readme"
+}
