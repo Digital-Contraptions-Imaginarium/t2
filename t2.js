@@ -45,10 +45,6 @@ var Twitter = function (options) {
     options = options ? options : { };
 
     // check the Twitter credentials
-    options.consumerkey = options.consumerkey ? options.consumerkey : process.env.TWITTER2RSS_CONSUMER_KEY;
-    options.consumersecret = options.consumersecret ? options.consumersecret : process.env.TWITTER2RSS_CONSUMER_SECRET;
-    options.tokenkey = options.tokenkey ? options.tokenkey : process.env.TWITTER2RSS_ACCESS_TOKEN_KEY;
-    options.tokensecret = options.tokensecret ? options.tokensecret : process.env.TWITTER2RSS_ACCESS_TOKEN_SECRET;
     if(_.any([
         options.consumerkey,
         options.consumersecret,

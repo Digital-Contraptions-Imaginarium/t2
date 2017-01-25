@@ -20,7 +20,7 @@ where:
 - ```twitter_option``` is one of the options the specified API supports, e.g. ```--user_id giacecco```, and
 - ```t2_option``` is one of the *t2* specific options, e.g. ```consumerkey```, ```consumerkey```, ```consumersecret``` and ```tokenkey``` for the credentials to use to connect to the Twitter servers.
 
-When not specified on the command line, both *t2cli* and the *t2* library attempt reading the credentials from the user environment in the variables ```TWITTER2RSS_CONSUMER_KEY```, ```TWITTER2RSS_CONSUMER_SECRET```, ```TWITTER2RSS_ACCESS_TOKEN_KEY``` and ```TWITTER2RSS_ACCESS_TOKEN_SECRET```.
+When not specified on the command line, *t2cli* attempts reading the credentials from the user environment in the variables ```TWITTER2RSS_CONSUMER_KEY```, ```TWITTER2RSS_CONSUMER_SECRET```, ```TWITTER2RSS_ACCESS_TOKEN_KEY``` and ```TWITTER2RSS_ACCESS_TOKEN_SECRET```.
 
 The ```--post``` *t2* option can be used to run one or more transformations over the API results, before displaying, expressed as a synchronous or asynchronous JavaScript function. E.g. a very useful transformation is ```--post 'r => r.map(x => JSON.stringify(x)).join("\n")' ``` that makes one JSON array of objects - as in the results of the original ```lists/list``` API - into [JSONL](http://jsonlines.org/): one JSON object per line.
 
