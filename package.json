@@ -1,7 +1,7 @@
 {
-  "name": "twitter2rss",
-  "version": "0.9.1",
-  "description": "twitter2rss",
+  "name": "t2",
+  "version": "0.0.1",
+  "description": "t2",
   "main": "new.js",
   "dependencies": {
     "fs-extra": "^2.0.0",
@@ -16,12 +16,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Digital-Contraptions-Imaginarium/twitter2rss.git"
+    "url": "git+https://github.com/Digital-Contraptions-Imaginarium/t2.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Digital-Contraptions-Imaginarium/twitter2rss/issues"
+    "url": "https://github.com/Digital-Contraptions-Imaginarium/t2/issues"
   },
-  "homepage": "https://github.com/Digital-Contraptions-Imaginarium/twitter2rss#readme"
+  "homepage": "https://github.com/Digital-Contraptions-Imaginarium/t2#readme"
 }
