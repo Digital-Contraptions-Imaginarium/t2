@@ -7,6 +7,12 @@ Differently than other Twitter libraries for Node.js, *t2* was written to be sma
 
 At the moment of writing, *t2* only supports APIs that "read" content (the "GET" ones).
 
+To install:
+
+```
+$ npm install im.dico.t2
+```
+
 ## t2cli
 
 *t2cli* is *t2*'s command line tool. In order to keep it as simple as possible, it mimics the syntax of the APIs it wraps, rather than having its own commands and options. The general usage in fact is:
