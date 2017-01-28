@@ -23,7 +23,7 @@ const
     APPLICATION = {
         LOCAL: "im.dico.t2",
         NAME: "t2",
-        VERSION: "0.1.0"
+        VERSION: "0.1.4"
     };
 
 const date2HashString = d => d.toISOString().

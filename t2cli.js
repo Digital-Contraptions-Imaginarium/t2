@@ -14,9 +14,9 @@ const
 
 const
     APPLICATION = {
-        LOCAL: "im.dico.t2cli",
+        LOCAL: "im.dico.t2",
         NAME: "t2cli",
-        VERSION: "0.1.0"
+        VERSION: "0.1.4"
     };
 
 var
@@ -28,16 +28,16 @@ var
         .epilog(APPLICATION.NAME + " v" + APPLICATION.VERSION + "\nThis software is copyright (C) 2017 Digital Contraptions Imaginarium Ltd. 2017 and released under the MIT Licence (MIT).")
         .argv;
 
-var fileExistsSync = f => {
+const fileExistsSync = f => {
     // TODO if the original from the *fs* library was deprecated there must be a reason...
     var ok = true; try { fs.statSync(f); } catch (err) { ok = false; }; return ok;
 }
 
 var twitter = new T2({
-    "consumerkey": argv.consumerkey | process.env.TWITTER2RSS_CONSUMER_KEY,
-    "consumersecret": argv.consumersecret | process.env.TWITTER2RSS_CONSUMER_SECRET,
-    "tokenkey": argv.tokenkey | process.env.TWITTER2RSS_ACCESS_TOKEN_KEY,
-    "tokensecret": argv.tokensecret | process.env.TWITTER2RSS_ACCESS_TOKEN_SECRET
+  "consumerkey": argv.consumerkey ? argv.consumerkey : process.env.T2_CONSUMER_KEY,
+  "consumersecret": argv.consumersecret ? argv.consumersecret : process.env.T2_CONSUMER_SECRET,
+  "tokenkey": argv.tokenkey ? argv.tokenkey : process.env.T2_ACCESS_TOKEN_KEY,
+  "tokensecret": argv.tokensecret ? argv.tokensecret : process.env.T2_ACCESS_TOKEN_SECRET
 });
 
 // TODO: this code is duplicated in t2.js, too, you can do better
@@ -57,6 +57,8 @@ twitter[functionName](twitterParameters, (err, results) => {
         console.error("Failed with error message: " + err.message);
         process.exit(1);
     }
+    // NOTE: this is the same code as in t2cli.json in
+    //       Digital-Contraptions-Imaginarium/twitter2rss
     async.reduce(!argv.post ? [ "x => JSON.stringify(x)" ] : [ ].concat(argv.post), results, (memo, p, callback) => {
         p = eval(fileExistsSync(p) ? fs.readFileSync(p, { "encoding": "utf8" }) : p);
         if (p.length > 1) {
