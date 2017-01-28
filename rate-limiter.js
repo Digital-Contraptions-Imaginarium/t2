@@ -18,39 +18,56 @@ var RateLimiter = function (resourceName, occurrences, timeInterval, options) {
 
     var _this = this;
 
+    this.initializeMemory = callback => {
+        // create an empty cache if it does not exist already
+        fs.stat(path.join(_this.options.local, _this.resourceName), (err, stats) => {
+            if (!err) return callback(null);
+            fs.writeFile(path.join(_this.options.local, _this.resourceName), JSON.stringify([ ]), { "encoding": "utf8" }, callback);
+        });
+    }
+
     this.removeTokens = (tokensNo, callback) => {
         if (!callback) { callback = tokensNo; tokensNo = 1; }
         var check = () => {
             var now = new Date();
-            fs.readFile(path.join(_this.options.local, _this.resourceName), { "encoding": "utf8" }, (err, memory) => {
-                if (err) {
-                    console.error("Could not read from the rate-limiting memory file.");
-                    process.exit(1);
-                }
-                memory = JSON.parse(memory).map(x => { return new Date(x); });
-                // memory garbage collection
-                memory = memory.filter(timestamp => {
-                    return now - timestamp <= _this.timeInterval;
-                }).sort();
-                // check for minWait
-                if (_.last(memory) && (_this.options.minWait > 0) ? now - _.last(memory) < _this.options.minWait : false) {
-                    // I need to wait
-                    setTimeout(check, _this.options.minWait - now + _.last(memory));
-                // check for the actual rate
-                } else if (_this.occurrences < memory.length + tokensNo) {
-                    // I need to wait
-                    setTimeout(check, now - memory[tokensNo - 1]);
-                // it's a go!
-                } else {
-                    memory = memory.concat(Array(tokensNo).fill(now));
-                    fs.writeFile(path.join(_this.options.local, _this.resourceName), JSON.stringify(memory), { "encoding": "utf8" }, err => {
-                        if (err) {
-                            console.error("Could not write to the rate-limiting memory file.");
-                            process.exit(1);
-                        }
-                        callback(null, _this.occurrences - memory.length);
-                    });
-                }
+            initializeMemory(err => {
+                fs.readFile(path.join(_this.options.local, _this.resourceName), { "encoding": "utf8" }, (err, memory) => {
+                    if (err) {
+                        console.error("Could not read from the rate-limiting memory file.");
+                        process.exit(1);
+                    }
+                    // TODO: this try/catch is necessary because it has
+                    //       happened that the script failed because the
+                    //       file is read but empty.
+                    try {
+                        memory = JSON.parse(memory).map(x => { return new Date(x); });
+                    } (catch err) {
+                        memory = [ ];
+                    }
+                    // memory garbage collection
+                    memory = memory.filter(timestamp => {
+                        return now - timestamp <= _this.timeInterval;
+                    }).sort();
+                    // check for minWait
+                    if (_.last(memory) && (_this.options.minWait > 0) ? now - _.last(memory) < _this.options.minWait : false) {
+                        // I need to wait
+                        setTimeout(check, _this.options.minWait - now + _.last(memory));
+                    // check for the actual rate
+                    } else if (_this.occurrences < memory.length + tokensNo) {
+                        // I need to wait
+                        setTimeout(check, now - memory[tokensNo - 1]);
+                    // it's a go!
+                    } else {
+                        memory = memory.concat(Array(tokensNo).fill(now));
+                        fs.writeFile(path.join(_this.options.local, _this.resourceName), JSON.stringify(memory), { "encoding": "utf8" }, err => {
+                            if (err) {
+                                console.error("Could not write to the rate-limiting memory file.");
+                                process.exit(1);
+                            }
+                            callback(null, _this.occurrences - memory.length);
+                        });
+                    }
+                });
             });
         };
         check();
@@ -80,10 +97,6 @@ var RateLimiter = function (resourceName, occurrences, timeInterval, options) {
     this.options.minWait = this.options.minWait ? this.options.minWait : 0;
     // initialization of folder structure
     fs.ensureDirSync(this.options.local);
-    // create an empty cache if it does not exist already
-    try { fs.statSync(path.join(this.options.local, this.resourceName)); } catch (err) {
-        fs.writeFileSync(path.join(this.options.local, this.resourceName), JSON.stringify([ ]), { "encoding": "utf8" });
-    }
 
 };
 
