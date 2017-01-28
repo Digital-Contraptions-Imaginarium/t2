@@ -30,7 +30,7 @@ var RateLimiter = function (resourceName, occurrences, timeInterval, options) {
         if (!callback) { callback = tokensNo; tokensNo = 1; }
         var check = () => {
             var now = new Date();
-            initializeMemory(err => {
+            _this.initializeMemory(err => {
                 fs.readFile(path.join(_this.options.local, _this.resourceName), { "encoding": "utf8" }, (err, memory) => {
                     if (err) {
                         console.error("Could not read from the rate-limiting memory file.");
@@ -41,7 +41,7 @@ var RateLimiter = function (resourceName, occurrences, timeInterval, options) {
                     //       file is read but empty.
                     try {
                         memory = JSON.parse(memory).map(x => { return new Date(x); });
-                    } (catch err) {
+                    } catch (err) {
                         memory = [ ];
                     }
                     // memory garbage collection

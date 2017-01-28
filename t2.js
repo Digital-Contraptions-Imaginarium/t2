@@ -23,7 +23,7 @@ const
     APPLICATION = {
         LOCAL: "im.dico.t2",
         NAME: "t2",
-        VERSION: "0.1.4"
+        VERSION: "0.1.8"
     };
 
 const date2HashString = d => d.toISOString().
@@ -185,6 +185,7 @@ var Twitter = function (options) {
                     loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
                 } else {
                     nonMemoizedFunction(parameters, (err, results)=> {
+                        if (err) return callback(err);
                         saveCache(prefixHashForMemoization, timestamp, results, err => {
                             callback(null, results);
                         });
