@@ -151,7 +151,7 @@ var Twitter = function (options) {
 
         var nonMemoizedFunction = (parameters, callback) => {
             if (!callback) { callback = parameters; parameters = { }; }
-            apiconf.limiting.removeTokens(1, (err) => {
+            apiconf.limiting.removeTokens(1, err => {
                 twitterClient.get(
                     apiconf.endpoint,
                     parameters,
