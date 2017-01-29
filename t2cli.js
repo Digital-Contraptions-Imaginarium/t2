@@ -1,5 +1,5 @@
 // ************************************************************************* //
-// This is a command-line wrapper for the memoized-twitter-client.js library //
+// This is a command-line wrapper for the t2.js library                      //
 // ************************************************************************* //
 
 const
