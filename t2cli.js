@@ -16,7 +16,7 @@ const
     APPLICATION = {
         LOCAL: "im.dico.t2",
         NAME: "t2cli",
-        VERSION: "0.1.10"
+        VERSION: "0.1.11"
     };
 
 var

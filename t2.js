@@ -3,6 +3,7 @@
 // ************************************************************************* //
 
 const
+    async = require('async'),
     crypto = require('crypto'),
     // https://github.com/jprichardson/node-fs-extra
     // MIT license
@@ -23,7 +24,7 @@ const
     APPLICATION = {
         LOCAL: "im.dico.t2",
         NAME: "t2",
-        VERSION: "0.1.10"
+        VERSION: "0.1.11"
     };
 
 const date2HashString = d => d.toISOString().
@@ -86,18 +87,38 @@ var Twitter = function (options) {
         rateLimiter450Per15Minutes = new RateLimiter("limiter-450-per-15minutes", 450, 900000, { "local": LIMITERS_FOLDER }),
         rateLimiter900Per15Minutes = new RateLimiter("limiter-900-per-15minutes", 900, 900000, { "local": LIMITERS_FOLDER });
 
-    // TODO: some garbage collection
-
-    var getLatestCacheTimestamp = (prefixHashForMemoization, callback) => {
+    var garbageCollect = callback => {
+        // delete everything older than 24 hours, prefix independent
         fs.readdir(CACHE_FOLDER, (err, files) => {
             if (err) {
                 console.error("Error reading the cache folder: " + err.message);
                 return process.exit(1);
             }
-            callback(null, _.last(files
-                .filter(filename => filename.match(new RegExp('^' + prefixHashForMemoization)))
-                .map(filename => hashString2date(filename.match(/_(\d{11})$/)[1]))
-                .sort()));
+            let yesterday = (new Date()) - 86400000;
+            async.forEach(files.filter(file => hashString2date(file.split("_")[2]) < yesterday), (file, callback) => {
+                fs.remove(path.join(CACHE_FOLDER, file), callback);
+            }, err => {
+                if (err) {
+                    console.error("Error performing garbage collection of the cache folder: " + err.message);
+                    return process.exit(1);
+                }
+                callback(null);
+            });
+        });
+    }
+
+    var getLatestCacheTimestamp = (prefixHashForMemoization, callback) => {
+        garbageCollect(err => {
+            fs.readdir(CACHE_FOLDER, (err, files) => {
+                if (err) {
+                    console.error("Error reading the cache folder: " + err.message);
+                    return process.exit(1);
+                }
+                callback(null, _.last(files
+                    .filter(filename => filename.match(new RegExp('^' + prefixHashForMemoization)))
+                    .map(filename => hashString2date(filename.match(/_(\d{11})$/)[1]))
+                    .sort()));
+            });
         });
     }
 
