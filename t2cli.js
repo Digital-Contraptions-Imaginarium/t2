@@ -16,7 +16,7 @@ const
     APPLICATION = {
         LOCAL: "im.dico.t2",
         NAME: "t2cli",
-        VERSION: "0.1.8"
+        VERSION: "0.1.10"
     };
 
 var
@@ -37,7 +37,8 @@ var twitter = new T2({
   "consumerkey": argv.consumerkey ? argv.consumerkey : process.env.T2_CONSUMER_KEY,
   "consumersecret": argv.consumersecret ? argv.consumersecret : process.env.T2_CONSUMER_SECRET,
   "tokenkey": argv.tokenkey ? argv.tokenkey : process.env.T2_ACCESS_TOKEN_KEY,
-  "tokensecret": argv.tokensecret ? argv.tokensecret : process.env.T2_ACCESS_TOKEN_SECRET
+  "tokensecret": argv.tokensecret ? argv.tokensecret : process.env.T2_ACCESS_TOKEN_SECRET,
+  "nocache": argv.nocache
 });
 
 // TODO: this code is duplicated in t2.js, too, you can do better
@@ -49,7 +50,12 @@ functionName = "get" +
 // drop from Yargs' argv any element that must not be handed over to the actual Twitter API
 var twitterParameters = JSON.parse(JSON.stringify(argv));
 _.keys(twitterParameters)
-    .filter(key => _.any([ "^_$", "^\\$", "^post$", "^consumerkey$", "^consumersecret$", "^tokenkey$", "^tokensecret$" ], re => key.match(new RegExp(re))))
+    .filter(key => _.any([
+        "^_$", "^\\$",
+        "^consumerkey$", "^consumersecret$", "^tokenkey$", "^tokensecret$",
+        "^post$",
+        "^nocache$"
+    ], re => key.match(new RegExp(re))))
     .forEach(key => { delete twitterParameters[key]; });
 // call my memoized wrapper, print the results to stdout and exit
 twitter[functionName](twitterParameters, (err, results) => {

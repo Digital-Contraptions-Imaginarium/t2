@@ -23,7 +23,7 @@ const
     APPLICATION = {
         LOCAL: "im.dico.t2",
         NAME: "t2",
-        VERSION: "0.1.8"
+        VERSION: "0.1.10"
     };
 
 const date2HashString = d => d.toISOString().
@@ -181,11 +181,11 @@ var Twitter = function (options) {
                 })).digest('hex') +
                 "_";
             getLatestCacheTimestamp(prefixHashForMemoization, (err, latestCacheTimestamp) => {
-                if (timestamp - latestCacheTimestamp <= BUFFER) {
+                if (!options.nocache && (timestamp - latestCacheTimestamp <= BUFFER)) {
                     loadCache(prefixHashForMemoization, latestCacheTimestamp, callback);
                 } else {
                     nonMemoizedFunction(parameters, (err, results)=> {
-                        if (err) return callback(err);
+                        if (options.nocache || err) return callback(err, results);
                         saveCache(prefixHashForMemoization, timestamp, results, err => {
                             callback(null, results);
                         });

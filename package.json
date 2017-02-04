@@ -1,6 +1,6 @@
 {
   "name": "im.dico.t2",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "description": "t2 is both a Node.js module and command line client for Twitter. Differently than other Twitter libraries for Node.js, t2 was written to be smart about rate limiting and data use in general, support for which are built in.",
   "main": "t2.js",
   "dependencies": {
